@@ -1,0 +1,13 @@
+- [x] 1.1 Create steering/specs usage guide
+  - File: docs/steering-and-specs.md
+  - Write quickstart covering: create-spec-doc, request-approval, get-approval-status, delete-approval, spec-list, spec-status; include dashboard usage notes and the rule that verbal approvals are not accepted
+  - Purpose: Provide visibility and reproducible workflow for team members
+  - _Leverage: .spec-workflow/steering/{product.md,tech.md,structure.md}, .spec-workflow/specs/steering/{requirements.md,design.md,tasks.md}_
+  - _Requirements: G3, FR4, NFR2_
+
+- [x] 1.2 Update README with steering/specs quick guide and link
+  - File: README.md
+  - Add a "Steering 与 Specs 工作流" section linking to docs/steering-and-specs.md and summarizing essential steps and commands
+  - Purpose: Onboard contributors quickly and standardize workflow usage
+  - _Leverage: docs/steering-and-specs.md_
+  - _Requirements: G3, NFR2_
