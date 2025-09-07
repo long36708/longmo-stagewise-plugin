@@ -19,6 +19,7 @@
     "@types/node": "^20.0.0",
     "@vitejs/plugin-vue": "^4.5.0",
     "@vue/eslint-config-typescript": "^11.0.0",
+    "@vue/test-utils": "2",
     "@vue/tsconfig": "^0.4.0",
     "eslint": "^8.0.0",
     "eslint-plugin-vue": "^9.0.0",

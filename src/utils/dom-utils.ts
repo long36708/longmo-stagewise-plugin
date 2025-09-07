@@ -20,7 +20,7 @@ export function isElementInViewport(element: Element): boolean {
 /**
  * 获取元素的样式信息
  */
-export function getElementStyleInfo(element: Element): ElementStyleInfo {
+export function getElementStyleInfo(element: Element): ElementStyleInfo & { boundingRect: DOMRect } {
   try {
     const computedStyle = window.getComputedStyle(element);
     const boundingRect = element.getBoundingClientRect();
@@ -60,6 +60,7 @@ export function getElementStyleInfo(element: Element): ElementStyleInfo {
         bottom: boundingRect.bottom,
         left: boundingRect.left
       },
+      boundingRect: boundingRect,
       computedStyles,
       inlineStyles,
       visibility: {

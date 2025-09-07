@@ -1,4 +1,4 @@
-import { ElementInfo } from '../types/element-selector';
+import { ElementStyleInfo } from '@/types/element-selector';
 
 /**
  * 选择状态持久化管理器
@@ -11,7 +11,7 @@ export class SelectionPersistenceManager {
    * 保存选择状态到本地存储
    * @param elements 要保存的元素信息数组
    */
-  static saveState(elements: ElementInfo[]): void {
+  static saveState(elements: ElementStyleInfo[]): void {
     try {
       const serializedState = JSON.stringify(elements, (key, value) => {
         // 特殊处理DOMRect对象，因为它不能被直接序列化
@@ -40,7 +40,7 @@ export class SelectionPersistenceManager {
    * 从本地存储加载选择状态
    * @returns 加载的元素信息数组，如果没有保存的状态则返回空数组
    */
-  static loadState(): ElementInfo[] {
+  static loadState(): ElementStyleInfo[] {
     try {
       const serializedState = localStorage.getItem(this.STORAGE_KEY);
       if (!serializedState) return [];

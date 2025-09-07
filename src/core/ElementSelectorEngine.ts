@@ -159,43 +159,7 @@ export class ElementSelectorEngine implements SelectorActions {
     }
   }
 
-  private generateSelector(element: Element): string | null {
-    try {
-      if (element.id) {
-        return `#${element.id}`;
-      }
-      
-      if (element.className) {
-        const classes = element.className.split(' ').filter(c => c.trim());
-        if (classes.length > 0) {
-          return `.${classes.join('.')}`;
-        }
-      }
-      
-      // 生成基于路径的选择器
-      const path: string[] = [];
-      let current: Element | null = element;
-      
-      while (current && current !== document.body) {
-        const tagName = current.tagName.toLowerCase();
-        const siblings = Array.from(current.parentElement?.children || [])
-          .filter(sibling => sibling.tagName === current!.tagName);
-        
-        if (siblings.length > 1) {
-          const index = siblings.indexOf(current) + 1;
-          path.unshift(`${tagName}:nth-of-type(${index})`);
-        } else {
-          path.unshift(tagName);
-        }
-        
-        current = current.parentElement;
-      }
-      
-      return path.join(' > ');
-    } catch {
-      return null;
-    }
-  }
+
 
   public enableSelection(): void {
     if (this.state.isSelectionEnabled) return;

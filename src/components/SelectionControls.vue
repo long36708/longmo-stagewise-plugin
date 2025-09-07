@@ -1,4 +1,4 @@
-<![CDATA[
+
 <template>
   <div class="selection-controls">
     <div class="control-group">

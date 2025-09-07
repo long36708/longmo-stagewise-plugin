@@ -40,7 +40,7 @@ export function useElementSelection(options: UseElementSelectionOptions = {}) {
     return selectedElements.value.length < maxCount;
   });
   const isStatePersisted = computed(() => hasSavedState.value);
-  const lastSavedTime = computed(() => lastSaved.value ? new Date(lastSaved.value) : null);
+  const lastSavedTime = computed(() => (lastSaved.value ? new Date(lastSaved.value) : null));
 
   // 事件处理器
   const events: SelectorEvents = {
@@ -75,7 +75,20 @@ export function useElementSelection(options: UseElementSelectionOptions = {}) {
       checkPersistedState();
 
       selectorEngine = new ElementSelectorEngine(options.config, events);
-      
+      // 若存在持久化状态，确保加载并在微任务中同步到组合式状态，触发组件 watch -> emit
+      if (hasSavedState.value) {
+        (selectorEngine as any).loadPersistedSelection?.();
+      }
+      Promise.resolve().then(() => {
+        try {
+          const els = selectorEngine?.getSelectedElements?.() ?? [];
+          selectedElements.value = els;
+          activeElement.value = selectorEngine?.getActiveElement?.() ?? null;
+        } catch {
+          // ignore
+        }
+      });
+
       if (options.autoEnable) {
         enableSelection();
       }
@@ -94,7 +107,7 @@ export function useElementSelection(options: UseElementSelectionOptions = {}) {
     if (!selectorEngine) {
       initializeSelector();
     }
-    
+
     try {
       selectorEngine?.enableSelection();
       isEnabled.value = true;
@@ -178,7 +191,7 @@ export function useElementSelection(options: UseElementSelectionOptions = {}) {
   // 获取选中元素的详细信息
   const getSelectedElementsInfo = (): ElementStyleInfo[] => {
     return selectedElements.value
-      .map(element => getElementInfo(element))
+      .map((element) => getElementInfo(element))
       .filter((info): info is ElementStyleInfo => info !== null);
   };
 
@@ -234,9 +247,8 @@ export function useElementSelection(options: UseElementSelectionOptions = {}) {
 
   // 生命周期钩子
   onMounted(() => {
-    if (options.autoEnable !== false) {
-      initializeSelector();
-    }
+    // 始终初始化引擎；autoEnable 仅控制是否立即启用选择
+    initializeSelector();
   });
 
   onUnmounted(() => {
@@ -250,19 +262,19 @@ export function useElementSelection(options: UseElementSelectionOptions = {}) {
 
   // 返回API
   return {
-    // 状态
+    // 状态（以只读计算暴露，防止外部直接写）
     isEnabled: readonly(isEnabled),
     selectedElements: readonly(selectedElements),
     activeElement: readonly(activeElement),
     selectionMode: readonly(selectionMode),
     error: readonly(error),
     isLoading: readonly(isLoading),
-    
+
     // 计算属性
     hasSelection,
     selectionCount,
     canSelectMore,
-    
+
     // 方法
     enableSelection,
     disableSelection,
@@ -275,10 +287,10 @@ export function useElementSelection(options: UseElementSelectionOptions = {}) {
     reset,
     saveCurrentState,
     loadSavedState,
-    
+
     // 工具方法
     initializeSelector,
-    
+
     // 持久化状态
     lastSaved,
     hasSavedState,
@@ -288,6 +300,6 @@ export function useElementSelection(options: UseElementSelectionOptions = {}) {
 }
 
 // 只读包装器
-function readonly(ref: any) {
-  return computed(() => ref.value);
+function readonly(refObj: any) {
+  return computed(() => refObj.value);
 }

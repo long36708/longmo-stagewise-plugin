@@ -75,7 +75,7 @@ import { watch } from 'vue';
 import { useElementSelection } from '@/composables/useElementSelection';
 import ElementInfo from './ElementInfo.vue';
 import SelectionControls from './SelectionControls.vue';
-import type { SelectionMode } from '@/types/element-selector';
+
 
 // Props
 interface Props {
