@@ -33,7 +33,7 @@
   - 实现样式信息格式化
   - _需求: REQ-2.3_
 
-- [-] 2.3 实现选择状态持久化 - `src/core/selection-persistence.ts`
+- [x] 2.3 实现选择状态持久化 - `src/core/selection-persistence.ts`
   - 实现LocalStorage存储
   - 实现选择状态序列化
   - 实现状态恢复功能

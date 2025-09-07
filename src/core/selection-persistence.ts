@@ -15,14 +15,23 @@ export class SelectionPersistenceManager {
    */
   static saveState(selections: ElementStyleInfo[]): boolean {
     try {
+      // 仅持久化可序列化且用于恢复所需的字段，避免序列化 DOM 元素
+      const persistable = selections.map(s => ({
+        selector: s.selector || '',
+        id: s.id || '',
+        tagName: s.tagName || '',
+        className: s.className || '',
+        rect: s.rect,
+        visibility: s.visibility
+      }));
+
       const serializedState = JSON.stringify({
-        selections,
+        selections: persistable,
         timestamp: new Date().toISOString()
       });
 
       localStorage.setItem(this.STORAGE_KEY, serializedState);
       localStorage.setItem(this.TIMESTAMP_KEY, new Date().toISOString());
-      
       return true;
     } catch (error) {
       console.error('Failed to save selection state:', error);
@@ -42,14 +51,27 @@ export class SelectionPersistenceManager {
       }
 
       const parsedState = JSON.parse(serializedState);
-      
+
       // 验证数据结构
       if (!parsedState.selections || !Array.isArray(parsedState.selections)) {
         this.clearState();
         return [];
       }
 
-      return parsedState.selections;
+      // 返回用于恢复的精简对象（不包含 element 引用）
+      const sanitized = parsedState.selections.map((s: any) => ({
+        element: undefined,
+        tagName: s.tagName || '',
+        className: s.className || '',
+        id: s.id || '',
+        rect: s.rect,
+        computedStyles: {},
+        inlineStyles: {},
+        visibility: s.visibility || { display: 'block', visibility: 'visible', opacity: 1, overflow: 'visible' },
+        selector: s.selector || ''
+      })) as ElementStyleInfo[];
+
+      return sanitized;
     } catch (error) {
       console.error('Failed to load selection state:', error);
       this.clearState();
