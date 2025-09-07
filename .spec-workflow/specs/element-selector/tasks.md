@@ -137,7 +137,7 @@
   - 编写最佳实践指南
   - _需求: REQ-6.1_
 
-- [ ] 8.2 创建演示示例 - `examples/ElementSelectorDemo.vue`
+- [x] 8.2 创建演示示例 - `examples/ElementSelectorDemo.vue`
   - 创建完整使用示例
   - 展示所有功能特性
   - 提供可交互演示
@@ -145,13 +145,13 @@
 
 ## 9. 构建和发布准备
 
-- [ ] 9.1 配置构建脚本 - `vite.config.ts`
+- [x] 9.1 配置构建脚本 - `vite.config.ts`
   - 配置组件库构建
   - 配置类型声明生成
   - 配置样式提取
   - _需求: 构建需求_
 
-- [ ] 9.2 创建发布配置 - `package.json`
+- [x] 9.2 创建发布配置 - `package.json`
   - 配置npm包信息
   - 配置依赖管理
   - 配置脚本命令
