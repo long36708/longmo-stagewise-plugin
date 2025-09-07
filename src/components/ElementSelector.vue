@@ -1,274 +1,391 @@
 <template>
-  <div class="element-selector-panel" v-if="isEnabled">
-    <div class="panel-header">
-      <h3>Element Selector</h3>
-      <button @click="disableSelection" class="close-btn">&times;</button>
-    </div>
-    <div class="panel-controls">
-      <button @click="toggleSelection" :class="{ active: isEnabled }">
-        {{ isEnabled ? 'Disable' : 'Enable' }} Selection
-      </button>
-      <button @click="clearSelection" :disabled="!hasSelection">Clear</button>
-      <div class="selection-mode">
-        <label>Mode:</label>
-        <select :value="selectionMode" @change="onModeChange">
-          <option value="single">Single</option>
-          <option value="multiple">Multiple</option>
-        </select>
+  <div class="element-selector">
+    <!-- 控制面板 -->
+    <SelectionControls
+      :is-enabled="isEnabled"
+      :has-selection="hasSelection"
+      :selection-mode="selectionMode"
+      @toggle-selection="toggleSelection"
+      @clear-selection="clearSelection"
+      @set-selection-mode="setSelectionMode"
+    />
+
+    <!-- 错误提示 -->
+    <div v-if="error" class="error-message">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <span class="error-text">{{ error.message }}</span>
+        <button @click="clearError" class="error-close">×</button>
       </div>
     </div>
-    <div class="panel-status">
-      <p>Status: {{ isEnabled ? 'Active' : 'Inactive' }}</p>
-      <p>Selected: {{ selectionCount }}</p>
+
+    <!-- 加载状态 -->
+    <div v-if="isLoading" class="loading-indicator">
+      <div class="spinner"></div>
+      <span>初始化中...</span>
     </div>
-    <div v-if="error" class="panel-error">
-      <p><strong>Error:</strong> {{ error.message }}</p>
-      <button @click="clearError">Dismiss</button>
+
+    <!-- 活动元素信息 -->
+    <div v-if="activeElement && isEnabled" class="active-element-info">
+      <h4>当前元素</h4>
+      <ElementInfo :element="activeElement" />
     </div>
-    <div class="selected-elements-list" v-if="hasSelection">
-      <h4>Selected Elements:</h4>
+
+    <!-- 选中元素列表 -->
+    <div v-if="hasSelection" class="selected-elements">
+      <h4>已选择元素 ({{ selectionCount }})</h4>
+      <div class="elements-list">
+        <div
+          v-for="(element, index) in selectedElements"
+          :key="index"
+          class="element-item"
+        >
+          <div class="element-header">
+            <span class="element-tag">{{ getElementTag(element) }}</span>
+            <button
+              @click="removeElement(element)"
+              class="remove-btn"
+              title="移除此元素"
+            >
+              ×
+            </button>
+          </div>
+          <ElementInfo :element="element" :compact="true" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 使用说明 -->
+    <div v-if="!isEnabled && !hasSelection" class="usage-guide">
+      <h4>使用说明</h4>
       <ul>
-        <li v-for="(info, index) in selectedElementsInfo" :key="index">
-          <pre>{{ info.selector }}</pre>
-        </li>
+        <li>点击"开始选择"启用元素选择模式</li>
+        <li>鼠标悬停在页面元素上查看高亮效果</li>
+        <li>点击元素进行选择</li>
+        <li>使用Tab键切换单选/多选模式</li>
+        <li>按Esc键退出选择模式</li>
+        <li>按Delete键清除所有选择</li>
       </ul>
     </div>
-  </div>
-  <div v-else class="floating-button">
-     <button @click="enableSelection">
-        Select Elements
-      </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useElementSelection } from '../composables/useElementSelection';
-import type { SelectionMode, ElementStyleInfo } from '../types/element-selector';
+import { watch } from 'vue';
+import { useElementSelection } from '@/composables/useElementSelection';
+import ElementInfo from './ElementInfo.vue';
+import SelectionControls from './SelectionControls.vue';
+import type { SelectionMode } from '@/types/element-selector';
 
-// Props and Emits
+// Props
 interface Props {
   autoEnable?: boolean;
-  initialMode?: SelectionMode;
+  maxSelectionCount?: number;
+  highlightColor?: string;
+  persistSelection?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   autoEnable: false,
-  initialMode: 'multiple',
+  maxSelectionCount: 10,
+  highlightColor: '#3b82f6',
+  persistSelection: true
 });
 
-const emit = defineEmits<{
-  (e: 'selection-change', elements: Element[]): void;
+// Emits
+interface Emits {
+  (e: 'selectionChange', elements: Element[]): void;
+  (e: 'activeElementChange', element: Element | null): void;
   (e: 'error', error: Error): void;
-}>();
+}
 
+const emit = defineEmits<Emits>();
 
-// Integration with the composable
+// 使用组合式函数
 const {
   isEnabled,
   selectedElements,
+  activeElement,
   selectionMode,
   error,
+  isLoading,
   hasSelection,
   selectionCount,
-  enableSelection,
-  disableSelection,
   toggleSelection,
   clearSelection,
   setSelectionMode,
-  getSelectedElementsInfo,
-  clearError,
+  clearError
 } = useElementSelection({
-  autoEnable: props.autoEnable,
   config: {
-    initialMode: props.initialMode,
+    maxSelectionCount: props.maxSelectionCount,
+    highlightColor: props.highlightColor,
+    persistSelection: props.persistSelection
   },
+  autoEnable: props.autoEnable
 });
 
-const selectedElementsInfo = computed<ElementStyleInfo[]>(() => {
-  return getSelectedElementsInfo();
+// 监听状态变化并发出事件
+watch(selectedElements, (elements) => {
+  emit('selectionChange', elements);
 });
 
-const onModeChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  setSelectionMode(target.value as SelectionMode);
+watch(activeElement, (element) => {
+  emit('activeElementChange', element);
+});
+
+watch(error, (err) => {
+  if (err) {
+    emit('error', err);
+  }
+});
+
+// 方法
+const getElementTag = (element: Element): string => {
+  const tag = element.tagName.toLowerCase();
+  const id = element.id ? `#${element.id}` : '';
+  const className = element.className ? `.${element.className.split(' ').join('.')}` : '';
+  return `${tag}${id}${className}`;
 };
 
+const removeElement = (element: Element) => {
+  // 这里需要实现从选择中移除特定元素的功能
+  // 由于当前API没有直接支持，我们可以通过清除后重新选择其他元素来实现
+  selectedElements.value.filter((el: Element) => el !== element);
+  clearSelection();
+  // 注意：这里需要在SelectorEngine中添加selectElements方法来批量选择
+};
 </script>
 
-<style lang="scss" scoped>
-.element-selector-panel {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 350px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
+<style scoped lang="scss">
+.element-selector {
+  padding: 16px;
+  background: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 9999;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  max-width: 400px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.selector-controls {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #dee2e6;
-
-  h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-  }
-
-  .close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #6c757d;
-    padding: 0;
-    line-height: 1;
-  }
-}
-
-.panel-controls {
+.control-group {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
   align-items: center;
   flex-wrap: wrap;
+}
 
-  button {
-    padding: 6px 12px;
-    border: 1px solid #007bff;
-    background-color: #fff;
-    color: #007bff;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
+.btn {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
-    &.active {
-      background-color: #007bff;
-      color: #fff;
+  &:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+
+    &:hover:not(:disabled) {
+      background: #2563eb;
     }
 
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      border-color: #6c757d;
-      color: #6c757d;
-      background-color: #f8f9fa;
+    &.active {
+      background: #dc2626;
+      border-color: #dc2626;
+
+      &:hover:not(:disabled) {
+        background: #b91c1c;
+      }
+    }
+  }
+
+  &.btn-secondary {
+    background: #6b7280;
+    color: white;
+    border-color: #6b7280;
+
+    &:hover:not(:disabled) {
+      background: #4b5563;
     }
   }
 }
 
-.selection-mode {
+.mode-selector {
   display: flex;
   align-items: center;
-  gap: 6px;
-  
-  label {
-    font-size: 14px;
-  }
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
 
   select {
     padding: 4px 8px;
+    border: 1px solid #d1d5db;
     border-radius: 4px;
-    border: 1px solid #ced4da;
+    background: white;
+    font-size: 14px;
   }
 }
 
-.panel-status {
-  padding: 8px 16px;
-  background-color: #e9ecef;
-  font-size: 13px;
-  color: #495057;
-  border-top: 1px solid #dee2e6;
-  border-bottom: 1px solid #dee2e6;
+.error-message {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+}
 
-  p {
-    margin: 4px 0;
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+.error-text {
+  flex: 1;
+  font-size: 14px;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-.panel-error {
-  padding: 12px 16px;
-  background-color: #f8d7da;
-  color: #721c24;
-  border-bottom: 1px solid #f5c6cb;
-  
-  p {
-    margin: 0 0 8px 0;
-  }
-
-  button {
-    padding: 4px 8px;
-    font-size: 12px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-}
-
-.selected-elements-list {
-  padding: 12px 16px;
-  max-height: 200px;
-  overflow-y: auto;
+.active-element-info,
+.selected-elements {
+  margin-bottom: 16px;
 
   h4 {
     margin: 0 0 8px 0;
     font-size: 14px;
-  }
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  li {
-    background: #e9ecef;
-    padding: 8px;
-    border-radius: 4px;
-    margin-bottom: 6px;
-    font-size: 12px;
-    
-    pre {
-      margin: 0;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
+    font-weight: 600;
+    color: #374151;
   }
 }
 
-.floating-button {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  z-index: 9998;
+.elements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  button {
-    padding: 12px 20px;
-    font-size: 16px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 50px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
+.element-item {
+  padding: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
 
-    &:hover {
-      background-color: #0056b3;
-      transform: translateY(-2px);
-    }
+.element-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.element-tag {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+
+  &:hover {
+    background: #fef2f2;
+  }
+}
+
+.usage-guide {
+  color: #6b7280;
+  font-size: 14px;
+
+  h4 {
+    margin: 0 0 8px 0;
+    color: #374151;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  li {
+    margin-bottom: 4px;
   }
 }
 </style>

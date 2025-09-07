@@ -9,7 +9,15 @@
       <div class="demo-container">
         <!-- 左侧：选择器控制面板 -->
         <div class="selector-panel">
-          <ElementSelector />
+          <ElementSelector
+            :auto-enable="false"
+            :max-selection-count="10"
+            :highlight-color="'#3b82f6'"
+            :persist-selection="true"
+            @selection-change="handleSelectionChange"
+            @active-element-change="handleActiveElementChange"
+            @error="handleError"
+          />
         </div>
 
         <!-- 右侧：演示内容区域 -->
@@ -84,15 +92,50 @@
       </div>
     </main>
 
-    <!-- 状态显示已移入 ElementSelector 组件 -->
+    <!-- 状态显示 -->
+    <div v-if="selectedCount > 0" class="status-bar">
+      已选择 {{ selectedCount }} 个元素
+      <span v-if="activeElementTag"> | 当前: {{ activeElementTag }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import ElementSelector from './components/ElementSelector.vue';
 
-// App.vue 现在只作为 ElementSelector 组件的宿主和演示内容的容器。
-// 所有选择器相关的逻辑和状态都已封装在 ElementSelector.vue 及其组合式函数中。
+// 响应式状态
+const selectedElements = ref<Element[]>([]);
+const activeElement = ref<Element | null>(null);
+const lastError = ref<Error | null>(null);
+
+// 计算属性
+const selectedCount = computed(() => selectedElements.value.length);
+const activeElementTag = computed(() => {
+  if (!activeElement.value) return '';
+  const tag = activeElement.value.tagName.toLowerCase();
+  const id = activeElement.value.id ? `#${activeElement.value.id}` : '';
+  const className = activeElement.value.className 
+    ? `.${activeElement.value.className.split(' ').join('.')}` 
+    : '';
+  return `${tag}${id}${className}`;
+});
+
+// 事件处理器
+const handleSelectionChange = (elements: Element[]) => {
+  selectedElements.value = elements;
+  console.log('Selection changed:', elements);
+};
+
+const handleActiveElementChange = (element: Element | null) => {
+  activeElement.value = element;
+  console.log('Active element changed:', element);
+};
+
+const handleError = (error: Error) => {
+  lastError.value = error;
+  console.error('Element selector error:', error);
+};
 </script>
 
 <style lang="scss">

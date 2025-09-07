@@ -18,7 +18,7 @@
 
 ## 2. 核心选择引擎实现
 
-- [-] 2.1 创建核心选择引擎类 - `src/core/ElementSelectorEngine.ts`
+- [x] 2.1 创建核心选择引擎类 - `src/core/ElementSelectorEngine.ts`
   - 实现选择状态管理
   - 实现元素高亮功能
   - 实现选择模式切换
@@ -55,7 +55,7 @@
   - 实现复制到剪贴板功能
   - _需求: REQ-3.3_
 
-- [ ] 3.3 创建选择控制组件 - `src/components/SelectionControls.vue`
+- [x] 3.3 创建选择控制组件 - `src/components/SelectionControls.vue`
   - 实现选择模式切换
   - 实现选择状态清除
   - 实现快捷键提示
@@ -63,13 +63,13 @@
 
 ## 4. 工具函数和工具类
 
-- [ ] 4.1 创建DOM工具函数 - `src/utils/dom-utils.ts`
+- [x] 4.1 创建DOM工具函数 - `src/utils/dom-utils.ts`
   - 实现元素查询函数
   - 实现样式计算函数
   - 实现坐标转换函数
   - _需求: REQ-2.3_
 
-- [ ] 4.2 创建事件工具类 - `src/utils/event-utils.ts`
+- [x] 4.2 创建事件工具类 - `src/utils/event-utils.ts`
   - 实现事件委托管理
   - 实现防抖和节流
   - 实现快捷键处理

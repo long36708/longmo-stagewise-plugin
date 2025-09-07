@@ -151,14 +151,8 @@ export class ElementSelectorEngine implements SelectorActions {
     if (!this.config.persistSelection) return;
 
     try {
-      const elementsToSave = this.state.selectedElements.map(element => ({
-        id: element.id || '',
-        tagName: element.tagName.toLowerCase(),
-        className: element.className,
-        selector: this.generateSelector(element) || '',
-        rect: element.getBoundingClientRect()
-      }));
-
+      // 生成完整的样式信息，符合 ElementStyleInfo 类型要求
+      const elementsToSave = this.state.selectedElements.map(el => this.getElementInfo(el));
       SelectionPersistenceManager.saveState(elementsToSave);
     } catch (error) {
       console.warn('Failed to persist selection:', error);
